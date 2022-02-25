@@ -15,8 +15,14 @@ namespace MostGameTask3
     /// всю информацию о них можно будет получить, так как лист публичный
     /// сеттеры приватные, т.к. подразумевается, что вся информация делается внутри класса и изменять их снаружи никак нельзя
     /// </summary>
+    /// 
     public class CountIndexPetrenko
     {
+        private enum RusOrEng
+        {
+            Rus,
+            Eng
+        }
         public double Index { get; private set; }
         public string String { get; private set; }
         public string Comment { get; private set; }
@@ -27,13 +33,17 @@ namespace MostGameTask3
         private int _trueStrLen;
 
         private string _separatorChars = " .,;:?\'\")[]{}<>!|/\\~+#%&^*-=";
-        private string _rusChars = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
-
+        //private string _rusChars = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+        //private string _engSymbols = "abcdefghijklmnopqrstuvwxyz";
+        private string _badComment = "String have a bad comment format";
+        private string _badString = "String have a bad string format";
         public CountIndexPetrenko(string str)
         {
             var splittedStr =  CutComment(str);
             String = splittedStr[0];
             Comment = splittedStr[1];
+            if (!ValidateString(String, RusOrEng.Rus))
+                throw new ArgumentException("String has a english letters");
             if (!ValidateComment(Comment))
                 throw new ArgumentException("Comment is empty or too big");
             TakeIndex();
@@ -47,10 +57,13 @@ namespace MostGameTask3
             TakeIndex();
         }
 
-        private string[] CutComment(string str)
+        private string[]? CutComment(string str)
         {
-            string[] splittedStringByContentAndComment = new string[2];
+            string[] splittedStringByContentAndComment;
             splittedStringByContentAndComment = str.Split('|');
+            if (splittedStringByContentAndComment.Length > 2 || splittedStringByContentAndComment.Length == 1)
+                return null;
+                //throw new ArgumentException("Bad string format (input string format \"text\"|\"comment\")");
             return splittedStringByContentAndComment;
         }
 
@@ -80,19 +93,64 @@ namespace MostGameTask3
                 result = (_trueStrLen * _trueStrLen / 2) + _minIndex;
             return result;
         }
+        private bool ValidateComment(string comment)
+        {
+            if (comment is null)
+                return false;
+            string cutString = comment.Trim();
+            var words = cutString.Split(' ');
+            if (words.Length > 5 || words[0] == "")
+            {
+                Console.WriteLine(_badComment);
+                return false;
+            }
+            return true;
+        }
 
+        private bool ValidateString (string text, RusOrEng rusOrEng)
+        {
+            if (rusOrEng is RusOrEng.Rus)
+            {
+                Regex r = new Regex(@"[abcdefghijklmnopqrstuvwxyz]");
+
+                if (r.IsMatch(text))
+                {
+                    Console.WriteLine(_badString);
+                    return false;
+                }
+            }
+            else if (rusOrEng is RusOrEng.Eng)
+            {
+                Regex r = new Regex(@"[абвгдеёжзийклмнопрстуфхцчшщъыьэюя]");
+
+                if (r.IsMatch(text))
+                {
+                    Console.WriteLine(_badString);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        //method for child string
         public void CheckString(string str)
         {
             var splittedString = CutComment(str);
-            if (splittedString.Length != 2)
-                throw new ArgumentException("Comparing string has a bad comment format");
-            ValidateComment(splittedString[1]);
+            if (splittedString is null)
+            {
+                Console.WriteLine(_badString);
+                return;
+            }
+            if (!ValidateString(splittedString[0], RusOrEng.Eng))
+                return;
+            if (!ValidateComment(splittedString[1]))
+                return;
             CountIndexPetrenko comparingString = new(splittedString[0], splittedString[1]);
             Regex r = new Regex(@"[абвгдеёжзийклмнопрстуфхцчшщъыьэюя]");
 
             if (r.IsMatch(comparingString.String))
             {
-                Console.WriteLine($"Your string has a russian letters");
+                Console.WriteLine(_badString);
                 return;
             }
             if (comparingString.Index == Index)
@@ -101,6 +159,7 @@ namespace MostGameTask3
                 Console.WriteLine($"string {comparingString.String} has a differrent index");
         }
 
+        //method for child string
         public void CheckString(List<string> strings)
         {
             foreach(var str in strings)
@@ -113,18 +172,6 @@ namespace MostGameTask3
                 Console.WriteLine(str.String);
         }
 
-        private bool ValidateComment(string comment)
-        {
-            if (comment is null)
-                return false;
-            string cutString = comment.Trim();
-            var words = cutString.Split(' ');
-            if (words.Length > 5)
-                return false;
-            if (words[0] == "")
-                throw new ArgumentException("Comment is empty");
-            return true;
-        }
     }
 }//TODO сделать проверку на то, что родитель из русских букв. Проверка коммента по длине.
 //проверка на несколько комментов и на пустой коммент (от 1 до 5 слов)
